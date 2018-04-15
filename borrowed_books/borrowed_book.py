@@ -1,16 +1,27 @@
 import datetime
+from enum import Enum, auto
 
 import requests
 import keyring as kr
 from bs4 import BeautifulSoup
 
 
-def is_due_back_soon(ret_date):
-    REMINDER_DAYS = 3
+class LoanPeriodState(Enum):
+    """借りた本の期限が、まだ先/もうすぐ/過ぎてる のうちどの状態かを表す"""
+    AWAY = auto()
+    SOON = auto()
+    OVERDUE = auto()
+
+
+def decide_loan_period_state(ret_date, _reminder_days=3):
     _ret_date_formatted = datetime.datetime.strptime(ret_date, "%Y.%m.%d")
     _now = datetime.datetime.today()
-    if (_ret_date_formatted - _now).days < REMINDER_DAYS:
-        return True
+    _delta = (_ret_date_formatted - _now).days
+    if _delta < 0:
+        return LoanPeriodState.OVERDUE
+    if 0 <= _delta < _reminder_days:
+        return LoanPeriodState.SOON
+    return LoanPeriodState.AWAY
 
 
 def download_my_page(_session):
@@ -30,8 +41,7 @@ def get_formatted_data(_book_data):
     return _title, _ret_date
 
 
-def send_notify(title, ret_date):
-    message = "以下の返却期限が迫っています\n{}\n返却期限: {}"
+def send_notify(title, ret_date, message):
     payload = {"message": message.format(title, ret_date)}
     auth_url = "https://notify-api.line.me/api/notify"
     headers = {'Content-Type': 'application/x-www-form-urlencoded',
@@ -41,13 +51,22 @@ def send_notify(title, ret_date):
 
 
 def main():
-    with requests.Session() as s:
-        soup = download_my_page(s)
+    with requests.Session() as session:
+        soup = download_my_page(session)
         try:
             for book_data in soup.find_all('table')[3].find_all('tr')[1:]:
                 title, ret_date = get_formatted_data(book_data)
-                if is_due_back_soon(ret_date):
-                    send_notify(title, ret_date)
+                state = decide_loan_period_state(ret_date)
+
+                if state == LoanPeriodState.AWAY:
+                    return
+                elif state == LoanPeriodState.OVERDUE:
+                    message = "＊＊書籍の返却期限が過ぎています！＊＊。\n{}\n返却期限: {}"
+                elif state == LoanPeriodState.SOON:
+                    message = "書籍の返却期限が迫っています。\n{}\n返却期限: {}"
+
+                send_notify(title, ret_date, message)
+
         except IndexError:
             pass
 
