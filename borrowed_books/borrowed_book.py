@@ -15,12 +15,12 @@ class LoanPeriodState(Enum):
 
 
 def decide_loan_period_state(ret_date, _reminder_days=3):
-    _ret_date_formatted = datetime.datetime.strptime(ret_date, "%Y.%m.%d")
-    _now = datetime.datetime.today()
+    _ret_date_formatted = datetime.datetime.strptime(ret_date, "%Y.%m.%d").date()
+    _now = datetime.date.today()
     _delta = (_ret_date_formatted - _now).days
     if _delta < 0:
         return LoanPeriodState.OVERDUE
-    if 0 <= _delta < _reminder_days:
+    if 0 <= _delta <= _reminder_days:
         return LoanPeriodState.SOON
     return LoanPeriodState.AWAY
 

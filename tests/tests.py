@@ -3,12 +3,12 @@ from borrowed_books.borrowed_book import decide_loan_period_state, LoanPeriodSta
 import datetime
 
 
-class TestIsDueBackSoon(unittest.TestCase):
+class TestBorrowedBook(unittest.TestCase):
     def setUp(self):
         self.today = datetime.date.today()
         self.yesterday = self.today - datetime.timedelta(days=1)
         self.reminder_days = 3
-        self.soon_border_day = self.today - datetime.timedelta(days=self.reminder_days)
+        self.soon_border_day = self.today + datetime.timedelta(days=self.reminder_days)
         self.format_str = "%Y.%m.%d"
 
     def test_decide_loan_period_state(self):
