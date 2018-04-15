@@ -2,6 +2,7 @@ import datetime
 from enum import Enum, auto
 
 import requests
+import requests.exceptions
 import keyring as kr
 from bs4 import BeautifulSoup
 
@@ -32,6 +33,7 @@ def download_my_page(_session):
                 'LOGIN_PASS': _passwd, }
     _url = 'https://opac.lib.hokudai.ac.jp/opac-service/srv_odr_stat.php'
     r = _session.post(_url, data=_payload)
+    r.raise_for_status()
     return BeautifulSoup(r.text, 'html.parser')
 
 
@@ -41,8 +43,8 @@ def get_formatted_data(_book_data):
     return _title, _ret_date
 
 
-def send_notify(title, ret_date, message):
-    payload = {"message": message.format(title, ret_date)}
+def send_notify(message, *args):
+    payload = {"message": message.format(*args)}
     auth_url = "https://notify-api.line.me/api/notify"
     headers = {'Content-Type': 'application/x-www-form-urlencoded',
                'Authorization': 'Bearer ' + kr.get_password('line_token', 'books'),
@@ -65,10 +67,15 @@ def main():
                 elif state == LoanPeriodState.SOON:
                     message = "書籍の返却期限が迫っています。\n{}\n返却期限: {}"
 
-                send_notify(title, ret_date, message)
+                send_notify(message, title, ret_date)
 
         except IndexError:
+            """何も借りていない時はここを通る"""
             pass
+
+        except requests.exceptions.HTTPError as error:
+            message = "データを取得できませんでした。\n{}"
+            send_notify(message, error.__traceback__)
 
 if __name__ == '__main__':
     main()
