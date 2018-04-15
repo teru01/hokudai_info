@@ -7,26 +7,35 @@ from bs4 import BeautifulSoup
 
 def is_due_back_soon(ret_date):
     REMINDER_DAYS = 3
-    ret_date_formatted = datetime.datetime.strptime(ret_date, "%Y.%m.%d")
-    now = datetime.datetime.today()
-    if (ret_date_formatted - now).days < REMINDER_DAYS:
+    _ret_date_formatted = datetime.datetime.strptime(ret_date, "%Y.%m.%d")
+    _now = datetime.datetime.today()
+    if (_ret_date_formatted - _now).days < REMINDER_DAYS:
         return True
 
 
-def main():
+def download_my_page(_session):
     _elms_id = kr.get_password('elmsid', 'elmsid')
     _passwd = kr.get_password('elms', _elms_id)
-    payload = {'PSTKBN': '2',
-               'LOGIN_USERID': _elms_id,
-               'LOGIN_PASS': _passwd, }
+    _payload = {'PSTKBN': '2',
+                'LOGIN_USERID': _elms_id,
+                'LOGIN_PASS': _passwd, }
+    _url = 'https://opac.lib.hokudai.ac.jp/opac-service/srv_odr_stat.php'
+    r = _session.post(_url, data=_payload)
+    return BeautifulSoup(r.text, 'html.parser')
 
+
+def get_formatted_data(_book_data):
+    _title = ''.join(_book_data.find_all('td')[6].string.split('/')[:-1])
+    _ret_date = _book_data.find_all('td')[4].string
+    return _title, _ret_date
+
+
+def main():
     with requests.Session() as s:
-        r = s.post('https://opac.lib.hokudai.ac.jp/opac-service/srv_odr_stat.php', data=payload)
-        soup = BeautifulSoup(r.text, 'html.parser')
+        soup = download_my_page(s)
         try:
             for book_data in soup.find_all('table')[3].find_all('tr')[1:]:
-                title = ''.join(book_data.find_all('td')[6].string.split('/')[:-1])
-                ret_date = book_data.find_all('td')[4].string
+                title, ret_date = get_formatted_data(book_data)
                 if is_due_back_soon(ret_date):
                     print("返却期限が迫っています")
                     print("{} , 返却期限: {}".format(title, ret_date))
