@@ -30,6 +30,16 @@ def get_formatted_data(_book_data):
     return _title, _ret_date
 
 
+def send_notify(title, ret_date):
+    message = "以下の返却期限が迫っています\n{}\n返却期限: {}"
+    payload = {"message": message.format(title, ret_date)}
+    auth_url = "https://notify-api.line.me/api/notify"
+    headers = {'Content-Type': 'application/x-www-form-urlencoded',
+               'Authorization': 'Bearer ' + kr.get_password('line_token', 'books'),
+               }
+    requests.post(auth_url, headers=headers, data=payload)
+
+
 def main():
     with requests.Session() as s:
         soup = download_my_page(s)
@@ -37,8 +47,7 @@ def main():
             for book_data in soup.find_all('table')[3].find_all('tr')[1:]:
                 title, ret_date = get_formatted_data(book_data)
                 if is_due_back_soon(ret_date):
-                    print("返却期限が迫っています")
-                    print("{} , 返却期限: {}".format(title, ret_date))
+                    send_notify(title, ret_date)
         except IndexError:
             pass
 
