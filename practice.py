@@ -1,10 +1,14 @@
 import requests
-import keyring
+import keyring as kr
 from bs4 import BeautifulSoup
 
 
 def main():
-    payload = {'PSTKBN': '2', 'LOGIN_USERID': 's02166131n', 'LOGIN_PASS': keyring.get_password('elms', 's02166131n')}
+    elmsid = kr.get_password('elmsid', 'elmsid')
+    passwd = kr.get_password('elms', elmsid)
+    payload = {'PSTKBN': '2',
+               'LOGIN_USERID': elmsid,
+               'LOGIN_PASS': passwd, }
     with requests.Session() as s:
         r = s.post('https://opac.lib.hokudai.ac.jp/opac-service/srv_odr_stat.php', data=payload)
         soup = BeautifulSoup(r.text, 'html.parser')
