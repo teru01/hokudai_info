@@ -1,5 +1,6 @@
 import datetime
 from enum import Enum, auto
+import sys
 
 import requests
 import requests.exceptions
@@ -58,7 +59,11 @@ def main():
         try:
             for book_data in soup.find_all('table')[3].find_all('tr')[1:]:
                 title, ret_date = get_formatted_data(book_data)
-                state = decide_loan_period_state(ret_date)
+
+                if len(sys.argv) == 2:
+                    state = decide_loan_period_state(ret_date, _reminder_days=int(sys.argv[1]))
+                else:
+                    state = decide_loan_period_state(ret_date)
 
                 if state == LoanPeriodState.AWAY:
                     return
