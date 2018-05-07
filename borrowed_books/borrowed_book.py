@@ -16,32 +16,32 @@ class LoanPeriodState(Enum):
 
 
 def decide_loan_period_state(ret_date, _reminder_days=3):
-    _ret_date_formatted = datetime.datetime.strptime(ret_date, "%Y.%m.%d").date()
-    _now = datetime.date.today()
-    _delta = (_ret_date_formatted - _now).days
-    if _delta < 0:
+    ret_date_formatted = datetime.datetime.strptime(ret_date, "%Y.%m.%d").date()
+    now = datetime.date.today()
+    delta = (ret_date_formatted - now).days
+    if delta < 0:
         return LoanPeriodState.OVERDUE
-    if 0 <= _delta <= _reminder_days:
+    if 0 <= delta <= _reminder_days:
         return LoanPeriodState.SOON
     return LoanPeriodState.AWAY
 
 
 def download_my_page(_session):
-    _elms_id = kr.get_password('elmsid', 'elmsid')
-    _passwd = kr.get_password('elms', _elms_id)
-    _payload = {'PSTKBN': '2',
-                'LOGIN_USERID': _elms_id,
-                'LOGIN_PASS': _passwd, }
-    _url = 'https://opac.lib.hokudai.ac.jp/opac-service/srv_odr_stat.php'
-    r = _session.post(_url, data=_payload)
-    r.raise_for_status()
-    return BeautifulSoup(r.text, 'html.parser')
+    elms_id = kr.get_password('elmsid', 'elmsid')
+    passwd = kr.get_password('elms', elms_id)
+    payload = {'PSTKBN': '2',
+                'LOGIN_USERID': elms_id,
+                'LOGIN_PASS': passwd, }
+    url = 'https://opac.lib.hokudai.ac.jp/opac-service/srv_odr_stat.php'
+    response = _session.post(url, data=payload)
+    response.raise_for_status()
+    return BeautifulSoup(response.text, 'html.parser')
 
 
 def get_formatted_data(_book_data):
-    _title = ''.join(_book_data.find_all('td')[6].string.split('/')[:-1])
-    _ret_date = _book_data.find_all('td')[4].string
-    return _title, _ret_date
+    title = ''.join(_book_data.find_all('td')[6].string.split('/')[:-1])
+    ret_date = _book_data.find_all('td')[4].string
+    return title, ret_date
 
 
 def send_notify(message, *args):
