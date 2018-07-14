@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
-. $HOME/.virtualenvs/hokudai_info/bin/activate
+#!/bin/bash
+. $HOME/PycharmProjects/hokudai_info/.venv/bin/activate
 python $HOME/PycharmProjects/hokudai_info/borrowed_books/borrowed_book.py
 deactivate
